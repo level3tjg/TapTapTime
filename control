@@ -1,0 +1,9 @@
+Package: com.level3tjg.taptaptime
+Name: TapTapTime
+Depends: mobilesubstrate
+Version: 1.0
+Architecture: iphoneos-arm
+Description: Double tap AirPods to have Siri tell you the time. Quadruple tap to activate siri
+Maintainer: level3tjg
+Author: level3tjg
+Section: Tweaks
