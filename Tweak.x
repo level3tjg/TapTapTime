@@ -1,6 +1,8 @@
 @interface AVSpeechSynthesisVoice : NSObject
+@property (nonatomic, assign) NSInteger quality;
 @property (nonatomic, copy) NSString *identifier;
 +(AVSpeechSynthesisVoice *)_voiceWithIdentifier:(NSString *)identifier includingSiri:(bool)siri;
++(AVSpeechSynthesisVoice *)voiceWithIdentifier:(NSString *)identifier;
 +(AVSpeechSynthesisVoice *)voiceWithLanguage:(NSString *)language;
 @end
 
@@ -24,12 +26,10 @@ int presses;
 bool running;
 
 void sayTime(){
-	dispatch_async(dispatch_get_global_queue( DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(void){
 	running = true;
-	if(presses == 2)
-		[NSThread sleepForTimeInterval:0.75];
-	    if(presses == 2){
-	    	dispatch_async(dispatch_get_main_queue(), ^(void){
+	dispatch_async(dispatch_get_main_queue(), ^{
+    	[NSTimer scheduledTimerWithTimeInterval:0.75 repeats:NO block:^(NSTimer * _Nonnull timer){
+    		if(presses == 2){
 	    		NSDate *date = [NSDate date];
 				NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
 				[dateFormatter setDateFormat:@"hh:mm a"];
@@ -37,7 +37,6 @@ void sayTime(){
 				NSString *newFormattedDateString = [NSString stringWithFormat:@"It's %@", formattedDateString];
 				AVSpeechSynthesizer *synthesizer = [[%c(AVSpeechSynthesizer) alloc] init];
 				AVSpeechUtterance *utterance = [%c(AVSpeechUtterance) speechUtteranceWithString:newFormattedDateString];
-				//utterance.voice = [%c(AVSpeechSynthesisVoice) voiceWithLanguage:/*[NSLocale preferredLanguages][0]*/@"en-UK"];
 				utterance.voice = voice;
 				[synthesizer speakUtterance:utterance];
 				if(@available(iOS 12, *)){
@@ -45,23 +44,20 @@ void sayTime(){
 				}
 				presses = 0;
 				running = false;
-			});
-		}
-		else{
-			dispatch_async(dispatch_get_main_queue(), ^(void){
+			}
+			else if(presses == 4){
 				SBAssistantController *assistantController = [%c(SBAssistantController) sharedInstance];
         		[assistantController handleSiriButtonDownEventFromSource:1 activationEvent:1];
         		[assistantController handleSiriButtonUpEventFromSource:1];
 				presses = 0;
 				running = false;
-			});
-		}
+			}
+		}];
 	});
 }
 
 %hook BluetoothManager
 -(void)_postNotificationWithArray:(NSArray *)array{
-	NSLog(@"-[BluetoothManager _postNotificationWithArray:]\n%@", array);
 	bool isVoice;
 	for(NSString *string in array){
 		if([string respondsToSelector:@selector(isEqualToString:)]){
@@ -89,9 +85,10 @@ void sayTime(){
 %ctor{
 	presses = 0;
 	if(@available(iOS 12, *)){
-		voice = [%c(AVSpeechSynthesisVoice) _voiceWithIdentifier:@"com.apple.ttsbundle.gryphon_female_en-US_premium" includingSiri:YES];
+		voice = [%c(AVSpeechSynthesisVoice) _voiceWithIdentifier:[NSString stringWithFormat:@"com.apple.ttsbundle.gryphon_female_%@_premium", [NSLocale preferredLanguages][0]] includingSiri:YES];
 	}
 	else{
 		voice = [%c(AVSpeechSynthesisVoice) voiceWithLanguage:[NSLocale preferredLanguages][0]];
 	}
+	voice.quality = 3;
 }
